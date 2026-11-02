@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>幾 A 幾 B 猜數字遊戲 - 雲端代號版 (V3)</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --success: #10b981;
+      --danger: #ef4444;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --border: #e2e8f0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      max-width: 650px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    .container {
+      background: var(--card-bg);
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    }
+
+    h1 {
+      margin-top: 0;
+      text-align: center;
+      color: var(--primary);
+      font-size: 24px;
+      margin-bottom: 25px;
+    }
+
+    .section-box {
+      background: #f1f5f9;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      font-size: 16px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--primary);
+    }
+
+    button {
+      padding: 10px 18px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      background: var(--primary);
+      color: white;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    button:hover {
+      background: var(--primary-hover);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button.btn-new {
+      background: var(--success);
+    }
+    button.btn-new:hover {
+      background: #059669;
+    }
+
+    .controls-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      background: #fafafa;
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .debug-box {
+      background: #fef3c7;
+      color: #92400e;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-weight: bold;
+      border: 1px solid #fde68a;
+      display: none;
+    }
+
+    .msg {
+      font-weight: 600;
+      margin: 12px 0;
+      min-height: 24px;
+    }
+
+    .game-card {
+      border: 1px solid var(--border);
+      padding: 16px;
+      margin-bottom: 15px;
+      border-radius: 10px;
+      background: #ffffff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    .game-title {
+      font-weight: bold;
+      font-size: 15px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .status-done { color: var(--success); background: #ecfdf5; padding: 2px 8px; border-radius: 4px; font-size: 13px; }
+    .status-unfinished { color: var(--danger); background: #fef2f2; padding: 2px 8px; border-radius: 4px; font-size: 13px; }
+
+    .history-item {
+      font-size: 14px;
+      color: #475569;
+      padding: 4px 0;
+      border-bottom: 1px dashed #f1f5f9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 幾 A 幾 B 雲端代號遊戲 (V3)</h1>
+
+    <!-- 代號輸入區 -->
+    <div class="section-box">
+      <input type="text" id="userIdInput" placeholder="請輸入您的遊戲代號 (例如: user001)" autocomplete="off">
+      <button onclick="loadUserData()">載入 / 切換代號</button>
+    </div>
+    
+    <!-- 遊戲主介面 (預設隱藏，載入代號後顯示) -->
+    <div id="gamePanel" style="display:none;">
+      <div class="controls-row">
+        <label style="cursor: pointer; font-weight: 500;">
+          <input type="checkbox" id="debugToggle" onchange="toggleDebug()"> 💡 開啟除錯模式
+        </label>
+        <button class="btn-new" onclick="startNewGame()">➕ 開啟新一局</button>
+      </div>
+
+      <div id="debugBox" class="debug-box"></div>
+
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <input type="text" id="guessInput" placeholder="請輸入 4 個不重複數字 (例: 0123)" maxlength="4" autocomplete="off">
+        <button onclick="makeGuess()" id="submitBtn">送出猜測</button>
+      </div>
+
+      <div id="msgBox" class="msg"></div>
+
+      <h3 style="margin-top: 25px; font-size: 18px;">☁️ 雲端存檔歷史紀錄：</h3>
+      <div id="gamesContainer"></div>
+    </div>
+  </div>
+
+  <script>
+    // ⚠️ 請填入您的 Google Apps Script 部署網址 (/exec)
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyppftUcIDVoHlEfq7tHASeMrHaP0vU0HAo31iC9QxdsRdgzXyWI5s-JgYQ_iUgT9Z7Zg/exec";
+
+    let currentUserId = "";
+    let games = [];
+    let currentGameIndex = -1;
+
+    function isValidGuess(val) {
+      if (val.length !== 4 || !/^\d{4}$/.test(val)) return false;
+      let set = new Set(val.split(""));
+      return set.size === 4;
+    }
+
+    function checkAB(ans, input) {
+      let a = 0, b = 0;
+      for (let i = 0; i < 4; i++) {
+        if (input[i] === ans[i]) a++;
+        else if (ans.includes(input[i])) b++;
+      }
+      return `${a}A${b}B`;
+    }
+
+    function generateAnswer() {
+      let digits = ["0","1","2","3","4","5","6","7","8","9"];
+      digits.sort(() => Math.random() - 0.5);
+      return digits.slice(0, 4).join("");
+    }
+
+    async function loadUserData() {
+      const uId = document.getElementById("userIdInput").value.trim();
+      if (!uId) {
+        alert("請先輸入有效的遊戲代號！");
+        return;
+      }
+      currentUserId = uId;
+      document.getElementById("gamePanel").style.display = "block";
+      document.getElementById("msgBox" ).innerText = "⏳ 正在從雲端載入代號資料...";
+      document.getElementById("msgBox").style.color = "#64748b";
+
+      try {
+        const resp = await fetch(`${GAS_API_URL}?action=load&userId=${encodeURIComponent(currentUserId)}`);
+        const res = await resp.json();
+        
+        if (res.status === "success") {
+          games = res.games || [];
+          document.getElementById("msgBox").innerText = "";
+          document.getElementById("debugToggle").checked = false;
+
+          if (games.length === 0) {
+            startNewGame();
+          } else {
+            currentGameIndex = 0; // 預設顯示最新一局
+            updateGameInputState();
+            updateDebugDisplay();
+            renderGames();
+          }
+        }
+      } catch (err) {
+        document.getElementById("msgBox").innerText = "❌ 載入失敗，請檢查網路連線或 GAS API 網址是否正確！";
+        document.getElementById("msgBox").style.color = "var(--danger)";
+      }
+    }
+
+    function startNewGame() {
+      document.getElementById("debugToggle").checked = false;
+      const newGame = {
+        id: games.length + 1,
+        answer: generateAnswer(),
+        status: "未完成",
+        history: []
+      };
+      games.unshift(newGame);
+      currentGameIndex = 0;
+
+      updateGameInputState();
+      updateDebugDisplay();
+      renderGames();
+      saveToCloud();
+    }
+
+    function updateGameInputState() {
+      const curGame = games[currentGameIndex];
+      const isDone = curGame && curGame.status === "完成";
+      document.getElementById("guessInput").disabled = isDone;
+      document.getElementById("submitBtn").disabled = isDone;
+      document.getElementById("guessInput").value = "";
+    }
+
+    function toggleDebug() {
+      updateDebugDisplay();
+    }
+
+    function updateDebugDisplay() {
+      const isChecked = document.getElementById("debugToggle").checked;
+      const debugBox = document.getElementById("debugBox");
+      if (isChecked && currentGameIndex >= 0 && games[currentGameIndex]) {
+        debugBox.style.display = "block";
+        debugBox.innerText = `🔍 [除錯模式] 第 ${games[currentGameIndex].id} 局真實解答：${games[currentGameIndex].answer}`;
+      } else {
+        debugBox.style.display = "none";
+      }
+    }
+
+    async function makeGuess() {
+      if (currentGameIndex < 0 || games[currentGameIndex].status === "完成") return;
+      const curGame = games[currentGameIndex];
+      const inputEl = document.getElementById("guessInput");
+      const msgEl = document.getElementById("msgBox");
+      const val = inputEl.value.trim();
+
+      if (!isValidGuess(val)) {
+        msgEl.innerText = "❌ 請輸入 4 個「數字不重複」的四位數（可包含開頭 0）！";
+        msgEl.style.color = "var(--danger)";
+        return;
+      }
+
+      msgEl.innerText = "⏳ 判定並同步至雲端試算表中...";
+      msgEl.style.color = "#64748b";
+
+      const result = checkAB(curGame.answer, val);
+      const timeStr = new Date().toLocaleTimeString();
+
+      curGame.history.push({
+        step: curGame.history.length + 1,
+        guess: val,
+        result: result,
+        time: timeStr
+      });
+
+      if (result === "4A0B") {
+        curGame.status = "完成";
+        msgEl.innerText = "🎉 恭喜完成本局！達成 4A0B！";
+        msgEl.style.color = "var(--success)";
+        document.getElementById("guessInput").disabled = true;
+        document.getElementById("submitBtn").disabled = true;
+      } else {
+        msgEl.innerText = `👉 猜測結果：${val} ➔ ${result}`;
+        msgEl.style.color = varText = "var(--primary)";
+      }
+
+      inputEl.value = "";
+      inputEl.focus();
+      renderGames();
+      await saveToCloud();
+    }
+
+    async function saveToCloud() {
+      try {
+        await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({
+            action: "save",
+            userId: currentUserId,
+            games: games
+          })
+        });
+      } catch (err) {
+        console.error("雲端存檔同步失敗", err);
+      }
+    }
+
+    function renderGames() {
+      const container = document.getElementById("gamesContainer");
+      container.innerHTML = "";
+
+      games.forEach((g, idx) => {
+        const card = document.createElement("div");
+        card.className = "game-card";
+        const statusClass = g.status === "完成" ? "status-done" : "status-unfinished";
+        
+        let historyHTML = g.history.map(h => 
+          `<div class="history-item">第 ${h.step} 次 [${h.time}] 猜測：<strong>${h.guess}</strong> ➔ 結果：<strong>${h.result}</strong></div>`
+        ).join("");
+
+        if (!historyHTML) historyHTML = "<div class='history-item' style='color:#94a3b8;'>尚無猜測紀錄</div>";
+
+        card.innerHTML = `
+          <div class="game-title">
+            <span>第 ${g.id} 局 ${idx === currentGameIndex ? "(當前續玩局)" : ""}</span>
+            <span class="${statusClass}">${g.status}</span>
+          </div>
+          ${historyHTML}
+        `;
+        container.appendChild(card);
+      });
+    }
+  </script>
+</body>
+</html>
